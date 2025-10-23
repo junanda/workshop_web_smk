@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List Interaktif</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f9f9f9 0%, #eef4ff 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        form {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.85rem;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.85rem 1.25rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        ul {
+            list-style: none;
+            width: 100%;
+            max-width: 600px;
+            padding: 0;
+        }
+
+        li {
+            background: white;
+            margin: 0.8rem 0;
+            padding: 1.1rem;
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease;
+        }
+
+        li:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+        }
+
+        .task-text {
+            flex: 1;
+            word-break: break-word;
+            font-size: 1.05rem;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #7f8c8d;
+        }
+
+        .btn {
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-done {
+            background: #2ecc71;
+            color: white;
+        }
+        .btn-done:hover {
+            background: #27ae60;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            margin-left: 6px;
+        }
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+
+        .editing-input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #95a5a6;
+            border-radius: 6px;
+            font-size: 1.05rem;
+        }
+
+        hr {
+            width: 100%;
+            max-width: 600px;
+            margin: 1.5rem 0;
+            border: 0;
+            border-top: 1px dashed #bdc3c7;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.4s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+                max-height: 0;
+                padding: 0;
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            form {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+            li {
+                flex-wrap: wrap;
+            }
+            .btn {
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📝 To-Do List Workshop Python</h1>
+
+    <form method="POST" action="{{ url_for('add_task') }}">
+        <input type="text" name="title" placeholder="Tambah tugas baru..." required>
+        <button type="submit">Tambah</button>
+    </form>
+    
+    <hr>
+    
+    <ul id="task-list">
+        {% for task in tasks %}
+        <li id="task-{{ task.id }}">
+            <span class="task-text {% if task.completed %}completed{% endif %}" 
+                  data-id="{{ task.id }}" 
+                  data-title="{{ task.title }}">
+                ({{ task.id }}) {{ task.title }}
+            </span>
+            <div>
+                {% if not task.completed %}
+                    <a href="#" class="btn btn-done" onclick="toggleTask({{ task.id }})">✅ Selesai</a>
+                {% endif %}
+                <a href="#" class="btn btn-delete" onclick="deleteTask({{ task.id }})">🗑️ Hapus</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        // Toggle selesai (AJAX)
+        function toggleTask(taskId) {
+            fetch(`/toggle/${taskId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const textEl = document.querySelector(`[data-id="${taskId}"]`);
+                        textEl.classList.toggle('completed');
+                        textEl.nextElementSibling.querySelector('.btn-done').remove();
+                    }
+                });
+        }
+
+        // Hapus tugas (AJAX + animasi)
+        function deleteTask(taskId) {
+            if (!confirm('Yakin ingin menghapus tugas ini?')) return;
+
+            fetch(`/delete/${taskId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const taskEl = document.getElementById(`task-${taskId}`);
+                        taskEl.classList.add('fade-out');
+                        setTimeout(() => taskEl.remove(), 400);
+                    }
+                });
+        }
+
+        // Fitur edit: klik ganda teks
+        document.querySelectorAll('.task-text').forEach(span => {
+            span.addEventListener('dblclick', function() {
+                const taskId = this.dataset.id;
+                const currentTitle = this.dataset.title;
+                const li = this.closest('li');
+
+                // Ganti teks dengan input
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'editing-input';
+                input.value = currentTitle;
+                input.focus();
+
+                // Simpan saat Enter
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        saveEdit(taskId, input.value, li, span);
+                    }
+                });
+
+                // Batal saat blur (opsional)
+                input.addEventListener('blur', function() {
+                    setTimeout(() => {
+                        if (li.contains(input)) {
+                            saveEdit(taskId, currentDesc, li, span); // kembalikan
+                        }
+                    }, 150);
+                });
+
+                li.replaceChild(input, this);
+            });
+        });
+
+        function saveEdit(taskId, newTitle, li, originalSpan) {
+            if (!newTitle.trim()) return;
+
+            fetch(`/edit/${taskId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Buat span baru
+                    const newSpan = document.createElement('span');
+                    newSpan.className = originalSpan.className;
+                    newSpan.dataset.id = taskId;
+                    newSpan.dataset.title = newTitle;
+                    newSpan.textContent = `(ID) ${newTitle}`.replace('ID', taskId);
+                    newSpan.addEventListener('dblclick', originalSpan.onclick);
+
+                    li.replaceChild(newSpan, li.querySelector('.editing-input'));
+                    // Pasang ulang event listener
+                    newSpan.addEventListener('dblclick', function() {
+                        // Reuse logic — bisa di-refactor jadi fungsi terpisah
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'editing-input';
+                        input.value = newDesc;
+                        input.focus();
+                        // ... (sama seperti di atas)
+                        // Untuk simpel, kita reload saja jika perlu kompleksitas lebih
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
